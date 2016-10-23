@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/mvc
+	http://www.springframework.org/schema/mvc/spring-mvc.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop.xsd">
+    
+	<mvc:annotation-driven />
+	<context:component-scan base-package="com.demo.web" />  
+    
+	<!-- 访问静态资源文件 -->
+	<mvc:resources mapping="/images/**" location="/images/" />
+	<mvc:resources mapping="/css/**" location="/css/" />  
+	<mvc:resources mapping="/js/**" location="/js/" />
+	<mvc:resources mapping="/imgdata/**" location="/imgdata/" />
+
+
+	<bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping"/>
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter"/>
+ 
+	<!-- 配置Freemarker属性文件路径 -->  
+	<bean id="freemarkerConfiguration" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+		<property name="location" value="classpath:conf/freemarker.properties"></property>
+	</bean>
+	<!-- 配置freeMarker模板加载地址 -->  
+	<bean id="freemarkerConfig" class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">  
+		<!-- 视图解析器在/WEB-INF/ftl/路径下扫描视图文件 -->  
+		<property name="templateLoaderPath" value="/WEB-INF/ftl/" />  
+		<property name="freemarkerVariables">  
+			<map>  
+				<entry key="xml_escape" value-ref="fmXmlEscape" />  
+			</map>  
+		</property>  
+	</bean> 
+	<bean id="fmXmlEscape" class="freemarker.template.utility.XmlEscape"/>  
+	<!-- 配置freeMarker视图解析器 -->  
+	<bean id="freemakerViewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">  
+		<property name="viewClass" value="org.springframework.web.servlet.view.freemarker.FreeMarkerView"/>  
+		<!-- 扫描路径內所有以ftl結尾的文件 -->  
+		<property name="viewNames">  
+			<array>  
+				<value>*.ftl</value>  
+			</array>  
+		</property>  
+		<property name="contentType" value="text/html; charset=UTF-8" />  
+		<property name="exposeRequestAttributes" value="true" />  
+		<property name="exposeSessionAttributes" value="true" />  
+		<property name="exposeSpringMacroHelpers" value="true" />  
+		<property name="requestContextAttribute" value="request" />  
+		<!-- 给视图解析器配置优先級，你可以给之前jsp视图解析器的值配为2 -->  
+		<property name="order" value="1" />  
+	</bean>  
+    
+    
+	<!-- 导入属性配置文件 -->  
+	<context:property-placeholder location="classpath:conf/jdbc.properties" />
+
+
+	<!-- 配置数据源   dbcp数据库连接池 -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}"/>
+		<property name="url" value="${jdbc.url}"/>
+		<property name="username" value="${jdbc.username}"/>
+		<property name="password" value="${jdbc.password}"/>
+	</bean>
+	<!-- 配置sqlSessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean"> 
+		<!--dataSource属性指定要用到的连接池--> 
+		<property name="dataSource" ref="dataSource"/> 
+		<!--configLocation属性指定mybatis的核心配置文件--> 
+		<property name="configLocation" value="classpath:conf/Configuration.xml" /> 
+		<!-- 所有配置的mapper文件 -->
+		<property name="mapperLocations" value="classpath*:com/demo/dao/mapper/*.xml" />
+	</bean> 
+
+	<!-- 配置mapper扫描器       要求mapper配置文件和类名需要一致。  -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<!-- 扫描包路径，如果需要扫描多个包中间用半角逗号隔开 -->
+		<property name="basePackage" value="com.demo.dao.mapper"></property>
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+	</bean>
+	
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+		<!-- 通知
+		<tx:advice id="txAdvice" transaction-manager="transactionManager">
+			<tx:attributes>
+				<tx:method name="save*" propagation="REQUIRED"/>
+				<tx:method name="insert*" propagation="REQUIRED"/>
+				<tx:method name="update*" propagation="REQUIRED"/>
+				<tx:method name="delete*" propagation="REQUIRED"/>
+				<tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+				<tx:method name="select*" propagation="SUPPORTS" read-only="true"/>
+			</tx:attributes>
+		</tx:advice>
+		 -->
+		
+		<!-- 配置aop 
+			<aop:config>
+				<aop:advisor advice-ref="txAdvice" pointcut="execution(* com.wxisme.ssm.service.impl.*.*(..))"/>
+			</aop:config>
+			 -->
+	</bean>
+ 
+</beans>  
