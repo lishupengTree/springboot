@@ -16,4 +16,6 @@ public interface  StudentMapper {
 	public void deleteStudent(StudentEntity entity);
 
 	public void updateStudent(StudentEntity entity);
+	
+	
 }
